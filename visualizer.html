@@ -481,14 +481,26 @@
     tick();
   }
 
+  const PASS_PAUSE_MS = 3000; // extra hold at the end of every pass while autoplaying
+
   function tick(){
     if (!playing) return;
     if (stepIndex >= steps.length){ pause(); return; }
     stepForward();
     if (stepIndex >= steps.length){ pause(); return; }
+
+    // a "pass" ends on the last 'sorted' mark in a run before a different step type begins
+    const justExecuted = steps[stepIndex - 1];
+    const nextStep = steps[stepIndex];
+    const isEndOfPass = justExecuted && justExecuted.type === 'sorted' &&
+                         (!nextStep || nextStep.type !== 'sorted');
+
     const speed = parseInt(els.speedSlider.value, 10);
-    const delay = 620 - speed * 55;
-    playTimer = setTimeout(tick, Math.max(30, delay));
+    const stepDelay = Math.max(30, 620 - speed * 55);
+    const delay = isEndOfPass ? PASS_PAUSE_MS : stepDelay;
+
+    if (isEndOfPass) setStatus('pass complete — next pass in a moment…');
+    playTimer = setTimeout(tick, delay);
   }
 
   function pause(){
